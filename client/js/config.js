@@ -13,6 +13,9 @@
  *
  * Accesorios disponibles en `look`: mask (color), monocle, headphones, antenna,
  * helmet + visor (colores), gauntlets (color), tie (color), cape (color), longHair.
+ * Traje: jacket (chaqueta del color de `suit`, con solapas, camisa y botones),
+ * lapel (color de solapas), shirt (color de camisa), sleeves (color de mangas).
+ * Otros: afro, chain (cadena dorada), pants: 'leopard' (pantalón de leopardo).
  * Emblemas: sun, hex, square, tri, ring, shield, diamond.
  */
 window.OFFICE_CONFIG = {
@@ -29,10 +32,14 @@ window.OFFICE_CONFIG = {
     tools: ['Task', 'Read'],
     look: {
       suit: '#efece4',
-      suit2: '#d9a521',
+      suit2: '#d8d2c4',
       boot: '#7a5d18',
       skin: '#e0a67e',
       hair: '#cfd3da',
+      jacket: true,
+      lapel: '#c9c1ae',
+      shirt: '#1f6f78',
+      tie: '#d9a521',
       cape: '#1f6f78',
       emblem: 'sun',
       accent: '#ffb547',
@@ -55,6 +62,9 @@ window.OFFICE_CONFIG = {
         skin: '#f1c7a4',
         hair: '#231b33',
         longHair: true,
+        jacket: true,
+        lapel: '#3b2a78',
+        shirt: '#f4f1e8',
         monocle: true,
         emblem: 'hex',
         accent: '#a98bff',
@@ -89,16 +99,21 @@ window.OFFICE_CONFIG = {
       title: 'la artista del frontend',
       persona: 'alegre y visual; habla de colores, espaciados y detalles; odia añadir librerías sin motivo',
       look: {
-        suit: '#18a7b5',
-        suit2: '#0e5a66',
-        boot: '#123c44',
-        skin: '#f5d6bd',
-        hair: '#ff6fae',
-        longHair: true,
-        mask: '#0b3a40',
+        suit: '#2f6be8',
+        suit2: '#d9a25a',
+        boot: '#f4f1e8',
+        skin: '#5a3825',
+        hair: '#1b1310',
+        afro: true,
+        jacket: true,
+        sleeves: '#ff5fae',
+        lapel: '#ff5fae',
+        shirt: '#ffe45c',
+        pants: 'leopard',
+        chain: true,
         headphones: true,
         emblem: 'tri',
-        accent: '#38d3e0',
+        accent: '#ff5fae',
       },
       frases: {
         libre: ['Este gris no me convence', 'Ajustando espaciados'],
@@ -151,6 +166,9 @@ window.OFFICE_CONFIG = {
         boot: '#0c1022',
         skin: '#f1c7a4',
         hair: '#3a2a20',
+        jacket: true,
+        lapel: '#121933',
+        shirt: '#f4f1e8',
         tie: '#d9a521',
         emblem: 'diamond',
         accent: '#7f9bff',
