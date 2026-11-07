@@ -1,7 +1,52 @@
+# Dependencias
 node_modules/
+
+# Variables de entorno (ANTHROPIC_API_KEY, rutas locales). Solo se sube la plantilla.
 .env
+.env.*
+!.env.example
+
+# Claves, certificados y credenciales
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+*.secret
+secrets/
+credentials*.json
+service-account*.json
+
+# Tokens de npm (un .npmrc local puede llevar _authToken)
+.npmrc
+
+# Transcripts de Claude Code: contienen conversaciones completas, rutas y posibles secretos
+*.jsonl
+
+# Configuración local de Claude Code (permisos, rutas, variables personales)
+.claude/settings.local.json
+.claude/*.local.*
+CLAUDE.local.md
+
+# Logs (pueden incluir eventos de hooks con prompts y rutas)
 *.log
+logs/
+npm-debug.log*
+
+# Volcados y copias de seguridad que pueden contener datos reales
+*.bak
+*.dump
+*.sqlite
+*.db
+
+# Sistema y editores
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
+
+# Varios
 _to_delete/
-.claude/settings.local.json
+coverage/
