@@ -924,6 +924,140 @@
     plant(-9.8, 9.3);
   }
 
+  /* --- decoración navideña: árbol junto a la ventana oeste y guirnaldas de luces en las paredes --- */
+  const XMAS = ['#ff3b3b', '#ffd23f', '#3be36b', '#3b8bff', '#ff7ad9', '#fff4dc'];
+  const xmasStrips = [];
+  /* tira de bombillas: un InstancedMesh por tira, con un color y una fase de parpadeo por bombilla */
+  function bulbStrip(points, r = 0.035) {
+    const m = new THREE.InstancedMesh(new THREE.SphereGeometry(r, 10, 8), new THREE.MeshBasicMaterial(), points.length);
+    const base = [],
+      phase = [],
+      o = new THREE.Object3D();
+    points.forEach((p, i) => {
+      o.position.copy(p);
+      o.updateMatrix();
+      m.setMatrixAt(i, o.matrix);
+      base.push(new THREE.Color(XMAS[i % XMAS.length]));
+      phase.push(i * 1.7 + (i % 3));
+      m.setColorAt(i, base[i]);
+    });
+    scene.add(m);
+    xmasStrips.push({ m, base, phase });
+  }
+  /* guirnalda colgada a lo largo de una pared, con un poco de comba entre ganchos */
+  function garland(axis, fixed, from, to, y) {
+    const span = 1.5,
+      n = Math.round((to - from) / 0.25),
+      pts = [];
+    for (let i = 0; i <= n; i++) {
+      const t = from + ((to - from) * i) / n,
+        f = ((t - from) % span) / span,
+        yy = y - 0.18 * 4 * f * (1 - f);
+      pts.push(axis === 'x' ? new THREE.Vector3(t, yy, fixed) : new THREE.Vector3(fixed, yy, t));
+    }
+    scene.add(
+      new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: '#1d3b24' })),
+    );
+    bulbStrip(pts.map((p) => p.clone().setY(p.y - 0.04)));
+  }
+  garland('x', -9.96, -14.95, 15, 2.88);
+  garland('z', -14.96, -9.95, 10, 2.88);
+  let xmasStar = null;
+  {
+    const tx = -13.2,
+      tz = 0.9;
+    cyl(0.32, 0.38, 0.3, '#c8352e', tx, 0.15, tz, scene, 16);
+    cyl(0.33, 0.33, 0.04, '#d9a521', tx, 0.29, tz, scene, 16, { metalness: 0.6, roughness: 0.35 });
+    cyl(0.08, 0.1, 0.3, '#6b4423', tx, 0.45, tz, scene, 10);
+    /* pisos del árbol: [radio, alto, y del centro] */
+    const TIERS = [
+      [0.95, 1.0, 0.85],
+      [0.75, 0.9, 1.35],
+      [0.55, 0.8, 1.8],
+      [0.33, 0.6, 2.25],
+    ];
+    TIERS.forEach(([r, h, y], i) => {
+      const c = new THREE.Mesh(
+        new THREE.ConeGeometry(r, h, 22),
+        mat(i % 2 ? '#2a7d45' : '#1f6b3a', { roughness: 0.9 }),
+      );
+      c.position.set(tx, y, tz);
+      c.castShadow = c.receiveShadow = true;
+      scene.add(c);
+    });
+    /* radio de la silueta del árbol a una altura dada */
+    const radiusAt = (y) =>
+      Math.max(0, ...TIERS.map(([r, h, cy]) => (y >= cy - h / 2 && y <= cy + h / 2 ? (r * (cy + h / 2 - y)) / h : 0)));
+    const ORN = ['#c8352e', '#d9a521', '#3b6fd8', '#efece4'];
+    for (let k = 0; k < 26; k++) {
+      const y = 0.5 + (k / 26) * 1.75,
+        a = k * 2.4,
+        d = radiusAt(y) * 0.9;
+      const b = new THREE.Mesh(
+        new THREE.SphereGeometry(0.055, 14, 10),
+        mat(ORN[k % ORN.length], { metalness: 0.6, roughness: 0.25 }),
+      );
+      b.position.set(tx + Math.sin(a) * d, y - 0.06, tz + Math.cos(a) * d);
+      b.castShadow = true;
+      scene.add(b);
+    }
+    const lights = [];
+    for (let k = 0; k < 70; k++) {
+      const t = k / 70,
+        y = 0.42 + t * 2.05,
+        a = t * Math.PI * 12,
+        d = radiusAt(y) * 0.97 + 0.01;
+      lights.push(new THREE.Vector3(tx + Math.sin(a) * d, y, tz + Math.cos(a) * d));
+    }
+    bulbStrip(lights, 0.028);
+    const star = new THREE.Shape();
+    for (let k = 0; k < 10; k++) {
+      const a = (k / 10) * Math.PI * 2,
+        r = k % 2 ? 0.07 : 0.17;
+      if (k) star.lineTo(Math.sin(a) * r, Math.cos(a) * r);
+      else star.moveTo(Math.sin(a) * r, Math.cos(a) * r);
+    }
+    xmasStar = new THREE.Mesh(
+      new THREE.ExtrudeGeometry(star, { depth: 0.04, bevelEnabled: false }),
+      new THREE.MeshStandardMaterial({ color: '#ffd23f', emissive: '#ffb21f', emissiveIntensity: 1, metalness: 0.4 }),
+    );
+    xmasStar.position.set(tx, 2.7, tz - 0.02);
+    scene.add(xmasStar);
+    const glow = new THREE.PointLight('#ffcf7a', 0.7, 4.5, 2);
+    glow.position.set(tx + 0.4, 1.5, tz + 0.6);
+    scene.add(glow);
+    /* regalos bajo el árbol: [x, z, ancho, alto, papel, lazo] */
+    [
+      [0.55, 0.45, 0.32, 0.26, '#c8352e', '#ffd23f'],
+      [-0.5, 0.55, 0.26, 0.22, '#3b6fd8', '#efece4'],
+      [0.1, 0.75, 0.22, 0.3, '#2a7d45', '#ff3b3b'],
+      [0.75, -0.2, 0.24, 0.18, '#ffd23f', '#c8352e'],
+    ].forEach(([dx, dz, w, h, paper, ribbon]) => {
+      const g = new THREE.Group();
+      g.position.set(tx + dx, 0, tz + dz);
+      g.rotation.y = dx * 1.3;
+      scene.add(g);
+      box(w, h, w, paper, 0, h / 2, 0, g);
+      box(w + 0.01, h + 0.01, 0.04, ribbon, 0, h / 2, 0, g);
+      box(0.04, h + 0.01, w + 0.01, ribbon, 0, h / 2, 0, g);
+    });
+    block(tx - 1, tz - 1, tx + 1.1, tz + 1.1, 0.1);
+  }
+  const tmpXmas = new THREE.Color();
+  function updateNavidad(t) {
+    for (const s of xmasStrips) {
+      s.base.forEach((c, i) => {
+        tmpXmas.copy(c).multiplyScalar(0.35 + 0.65 * Math.max(0, Math.sin(t * 2.2 + s.phase[i])));
+        s.m.setColorAt(i, tmpXmas);
+      });
+      s.m.instanceColor.needsUpdate = true;
+    }
+    if (xmasStar) {
+      xmasStar.rotation.y = Math.sin(t * 0.6) * 0.5;
+      xmasStar.material.emissiveIntensity = 0.8 + 0.4 * Math.sin(t * 3);
+    }
+  }
+
   roomLight(10.6, -5);
   roomLight(-10.5, -6.3);
   roomLight(-5, 2.6);
@@ -937,6 +1071,140 @@
      3. HÉROE 3D — mira hacia +z; ojos y boca van dentro del grupo cabeza
      ===================================================================== */
   const S = 0.92;
+
+  /* la cápsula reparte la v por índice de vértice; para pintar la chaqueta
+     se recalcula según la altura, así 1 px de textura = misma altura en todo el torso */
+  function uvVertical(geo) {
+    geo.computeBoundingBox();
+    const { min, max } = geo.boundingBox,
+      pos = geo.attributes.position,
+      uv = geo.attributes.uv;
+    for (let i = 0; i < pos.count; i++) uv.setY(i, (pos.getY(i) - min.y) / (max.y - min.y));
+  }
+  /* textura de chaqueta para el torso (y de 0.9 a 1.64). En la cápsula, u = 0 y u = 1 son
+     el centro del pecho, así que el frontal se dibuja en los dos bordes del lienzo */
+  const texCache = new Map();
+  function jacketMat(L) {
+    const key = ['jacket', L.suit, L.lapel, L.shirt, L.accent].join();
+    if (texCache.has(key)) return texCache.get(key);
+    const lapel = L.lapel || darken(L.suit, 0.78),
+      line = darken(L.suit, 0.5);
+    const tex = canvasTex(512, 512, (g, W, H) => {
+      const X = (th) => (th / (Math.PI * 2)) * W,
+        Y = (y) => ((1.64 - y) / 0.74) * H;
+      const poly = (pts, fill, stroke) => {
+        g.beginPath();
+        pts.forEach(([th, y], i) => (i ? g.lineTo(X(th), Y(y)) : g.moveTo(X(th), Y(y))));
+        g.closePath();
+        g.fillStyle = fill;
+        g.fill();
+        if (stroke) {
+          g.strokeStyle = stroke;
+          g.lineWidth = 2;
+          g.stroke();
+        }
+      };
+      g.fillStyle = L.suit;
+      g.fillRect(0, 0, W, H);
+      for (const cx of [0, W]) {
+        g.save();
+        g.translate(cx, 0);
+        poly(
+          [
+            [-0.5, 1.68],
+            [0.5, 1.68],
+            [0, 1.22],
+          ],
+          L.shirt || '#f4f1e8',
+        );
+        for (const s of [-1, 1])
+          poly(
+            [
+              [0.5 * s, 1.68],
+              [0.95 * s, 1.6],
+              [0.72 * s, 1.47],
+              [0.85 * s, 1.43],
+              [0.06 * s, 1.17],
+              [0, 1.22],
+            ],
+            lapel,
+            line,
+          );
+        g.strokeStyle = line;
+        g.lineWidth = 2;
+        g.beginPath();
+        g.moveTo(0, Y(1.19));
+        g.lineTo(0, H);
+        g.stroke();
+        g.fillStyle = darken(L.suit, 0.4);
+        for (const y of [1.12, 1.01]) {
+          g.beginPath();
+          g.arc(X(0.07), Y(y), 7, 0, Math.PI * 2);
+          g.fill();
+        }
+        /* bolsillos: pecho con pañuelo y dos de solapa abajo */
+        g.fillStyle = line;
+        g.fillRect(X(-1.0), Y(1.4), X(0.32), 3);
+        poly(
+          [
+            [-0.95, 1.4],
+            [-0.8, 1.44],
+            [-0.72, 1.4],
+          ],
+          L.lapel || L.accent || '#f4f1e8',
+        );
+        for (const s of [-1, 1]) g.fillRect(X(s > 0 ? 0.62 : -1.02), Y(1.0), X(0.4), 4);
+        g.restore();
+      }
+    });
+    const m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7 });
+    texCache.set(key, m);
+    return m;
+  }
+  /* estampado de leopardo: manchas en anillo sobre fondo dorado */
+  function leopardMat() {
+    if (texCache.has('leopard')) return texCache.get('leopard');
+    let seed = 7;
+    const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const tex = canvasTex(
+      256,
+      256,
+      (g, W, H) => {
+        g.fillStyle = '#d9a25a';
+        g.fillRect(0, 0, W, H);
+        for (let k = 0; k < 38; k++) {
+          const x = rand() * W,
+            y = rand() * H,
+            r = 9 + rand() * 8,
+            a1 = rand() * 3,
+            a2 = rand() * 3;
+          for (const [dx, dy] of [
+            [0, 0],
+            [W, 0],
+            [-W, 0],
+            [0, H],
+            [0, -H],
+          ]) {
+            g.fillStyle = '#b26a26';
+            g.beginPath();
+            g.ellipse(x + dx, y + dy, r * 0.75, r * 0.6, a1, 0, Math.PI * 2);
+            g.fill();
+            g.strokeStyle = '#2b1a0c';
+            g.lineWidth = 4;
+            g.setLineDash([r * 0.9, r * 0.5]);
+            g.beginPath();
+            g.ellipse(x + dx, y + dy, r, r * 0.8, a2, 0, Math.PI * 2);
+            g.stroke();
+          }
+        }
+      },
+      [2, 2],
+    );
+    const m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 });
+    texCache.set('leopard', m);
+    return m;
+  }
+
   function makeHero(def) {
     const L = def.look;
     const M = (c, o) => mat(c, o);
@@ -952,25 +1220,58 @@
     body.scale.setScalar(S);
     root.add(body);
     const parts = { body };
+    const pants = L.pants === 'leopard' ? leopardMat() : M(L.suit2);
+    const sleeve = L.sleeves || L.suit;
+    const shirt = L.shirt || '#f4f1e8';
 
     for (const s of [-1, 1]) {
       const hip = new THREE.Group();
       hip.position.set(0.11 * s, 0.9, 0);
       body.add(hip);
-      mesh(new THREE.CapsuleGeometry(0.085, 0.26, 4, 12), M(L.suit2), hip, 0, -0.2, 0);
+      mesh(new THREE.CapsuleGeometry(0.085, 0.26, 4, 12), pants, hip, 0, -0.2, 0);
       const knee = new THREE.Group();
       knee.position.y = -0.42;
       hip.add(knee);
-      mesh(new THREE.CapsuleGeometry(0.08, 0.24, 4, 12), M(L.suit2), knee, 0, -0.19, 0);
+      mesh(new THREE.CapsuleGeometry(0.08, 0.24, 4, 12), pants, knee, 0, -0.19, 0);
       mesh(new THREE.BoxGeometry(0.17, 0.11, 0.27), M(L.boot), knee, 0, -0.425, 0.045);
       parts[s < 0 ? 'hipL' : 'hipR'] = hip;
       parts[s < 0 ? 'kneeL' : 'kneeR'] = knee;
     }
-    const pelvis = mesh(new THREE.CapsuleGeometry(0.16, 0.13, 4, 12), M(L.suit2), body, 0, 0.93, 0);
+    const pelvis = mesh(new THREE.CapsuleGeometry(0.16, 0.13, 4, 12), pants, body, 0, 0.93, 0);
     pelvis.rotation.z = Math.PI / 2;
-    mesh(new THREE.CapsuleGeometry(0.21, 0.32, 6, 20), M(L.suit), body, 0, 1.27, 0);
-    mesh(new THREE.CylinderGeometry(0.215, 0.215, 0.06, 24), M(L.suit2), body, 0, 1.0, 0);
+    /* torso; con chaqueta, las solapas, la camisa y los botones van pintados en una textura
+       para que sigan la curva del cuerpo */
+    const torsoGeo = new THREE.CapsuleGeometry(0.21, 0.32, 6, 20);
+    if (L.jacket) uvVertical(torsoGeo);
+    mesh(torsoGeo, L.jacket ? jacketMat(L) : M(L.suit), body, 0, 1.27, 0);
+    mesh(new THREE.CylinderGeometry(0.215, 0.215, 0.06, 24), M(L.jacket ? L.suit : L.suit2), body, 0, 1.0, 0);
+    if (L.jacket) {
+      /* faldón de la chaqueta con la abertura delantera, y cuello de la camisa */
+      const skirt = mesh(
+        new THREE.CylinderGeometry(0.218, 0.245, 0.2, 24, 1, true),
+        M(L.suit, { side: THREE.DoubleSide }),
+        body,
+        0,
+        0.92,
+        0,
+      );
+      skirt.castShadow = false;
+      mesh(new THREE.BoxGeometry(0.012, 0.2, 0.01), M(darken(L.suit, 0.55)), body, 0, 0.92, 0.233).rotation.x = -0.07;
+      mesh(new THREE.CylinderGeometry(0.084, 0.09, 0.05, 16), M(shirt), body, 0, 1.655, 0);
+    }
     mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.14, 12), M(L.skin), body, 0, 1.71, 0);
+    if (L.chain) {
+      const chain = mesh(
+        new THREE.TorusGeometry(0.12, 0.009, 6, 28),
+        M('#e8c14a', { metalness: 0.85, roughness: 0.25 }),
+        body,
+        0,
+        1.6,
+        0.035,
+      );
+      chain.rotation.x = Math.PI / 2 - 0.55;
+      chain.castShadow = false;
+    }
 
     /* emblema en el pecho, pegado a la superficie del torso (radio 0.21) */
     const sides = { sun: 24, hex: 6, square: 4, tri: 3, ring: 24, shield: 5, diamond: 4 }[L.emblem] || 24;
@@ -985,11 +1286,12 @@
     );
     emblem.rotation.x = Math.PI / 2;
     if (L.emblem === 'diamond' || L.emblem === 'square') emblem.rotation.y = Math.PI / 4;
-    if (L.emblem === 'ring') {
+    if (L.jacket) emblem.visible = false;
+    if (L.emblem === 'ring' && !L.jacket) {
       const hole = mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.022, 20), M(L.suit), body, 0, 1.33, 0.214);
       hole.rotation.x = Math.PI / 2;
     }
-    if (L.emblem === 'sun')
+    if (L.emblem === 'sun' && !L.jacket)
       for (let k = 0; k < 8; k++) {
         const a = (k / 8) * Math.PI * 2;
         const ray = mesh(
@@ -1010,8 +1312,22 @@
       sh.lineTo(0, -0.245);
       sh.lineTo(-0.042, -0.2);
       sh.closePath();
-      mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.014, bevelEnabled: false }), M(L.tie), body, 0, 1.445, 0.208);
-      mesh(new THREE.BoxGeometry(0.05, 0.042, 0.03), M(darken(L.tie, 0.75)), body, 0, 1.465, 0.2);
+      if (L.jacket) {
+        /* sobre la camisa: nace en el cuello y se inclina siguiendo el pecho */
+        const tie = mesh(
+          new THREE.ExtrudeGeometry(sh, { depth: 0.014, bevelEnabled: false }),
+          M(L.tie),
+          body,
+          0,
+          1.56,
+          0.18,
+        );
+        tie.rotation.x = -0.16;
+        mesh(new THREE.BoxGeometry(0.05, 0.042, 0.03), M(darken(L.tie, 0.75)), body, 0, 1.575, 0.178);
+      } else {
+        mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.014, bevelEnabled: false }), M(L.tie), body, 0, 1.445, 0.208);
+        mesh(new THREE.BoxGeometry(0.05, 0.042, 0.03), M(darken(L.tie, 0.75)), body, 0, 1.465, 0.2);
+      }
       emblem.visible = false;
     }
     if (L.cape) {
@@ -1030,12 +1346,13 @@
       const sh = new THREE.Group();
       sh.position.set(0.29 * s, 1.55, 0);
       body.add(sh);
-      mesh(new THREE.SphereGeometry(0.09, 16, 12), M(L.suit), sh);
-      mesh(new THREE.CapsuleGeometry(0.072, 0.24, 4, 12), M(L.suit), sh, 0, -0.17, 0);
+      mesh(new THREE.SphereGeometry(0.09, 16, 12), M(sleeve), sh);
+      mesh(new THREE.CapsuleGeometry(0.072, 0.24, 4, 12), M(sleeve), sh, 0, -0.17, 0);
       const el = new THREE.Group();
       el.position.y = -0.36;
       sh.add(el);
-      mesh(new THREE.CapsuleGeometry(0.066, 0.22, 4, 12), M(L.gauntlets || L.suit), el, 0, -0.15, 0);
+      mesh(new THREE.CapsuleGeometry(0.066, 0.22, 4, 12), M(L.gauntlets || sleeve), el, 0, -0.15, 0);
+      if (L.jacket && !L.gauntlets) mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.04, 16), M(shirt), el, 0, -0.27, 0);
       if (L.gauntlets)
         mesh(
           new THREE.BoxGeometry(0.17, 0.17, 0.17),
@@ -1067,9 +1384,14 @@
     parts.head = head;
     mesh(new THREE.SphereGeometry(0.2, 32, 24), M(L.skin), head);
     for (const s of [-1, 1]) mesh(new THREE.SphereGeometry(0.045, 12, 10), M(L.skin), head, 0.198 * s, -0.01, -0.01);
+    /* rasgos centrados en la cara visible (entre la barbilla y el nacimiento del pelo).
+       Con casco se mantiene la cara de siempre, alineada con el visor. */
+    const F = L.helmet
+      ? { eyeY: 0.035, eyeZ: 0, mouthY: -0.06, mouthZ: 0.181, mouthTilt: 0.27 }
+      : { eyeY: 0, eyeZ: 0.004, mouthY: -0.088, mouthZ: 0.171, mouthTilt: 0.45 };
     if (L.mask) {
       const band = mesh(
-        new THREE.SphereGeometry(0.204, 40, 8, Math.PI / 2 - 1.15, 2.3, 1.2, 0.42),
+        new THREE.SphereGeometry(0.204, 40, 8, Math.PI / 2 - 1.15, 2.3, 1.2 + (0.035 - F.eyeY) * 5, 0.42),
         M(L.mask, { side: THREE.DoubleSide }),
         head,
       );
@@ -1077,7 +1399,7 @@
     }
     /* ojos: esclerótica aplanada que asoma de la superficie + pupila delante + brillo */
     const eyes = new THREE.Group();
-    eyes.position.y = 0.035;
+    eyes.position.y = F.eyeY;
     head.add(eyes);
     parts.eyes = eyes;
     for (const s of [-1, 1]) {
@@ -1087,7 +1409,7 @@
         eyes,
         0.072 * s,
         0,
-        0.17,
+        0.17 + F.eyeZ,
       );
       sc.scale.z = 0.7;
       sc.castShadow = false;
@@ -1097,7 +1419,7 @@
         eyes,
         0.072 * s,
         0,
-        0.195,
+        0.195 + F.eyeZ,
       ).castShadow = false;
       mesh(
         new THREE.SphereGeometry(0.007, 8, 6),
@@ -1105,15 +1427,33 @@
         eyes,
         0.072 * s + 0.008,
         0.009,
-        0.217,
+        0.217 + F.eyeZ,
       ).castShadow = false;
+    }
+    if (!L.helmet) {
+      /* cejas (fuera del grupo de ojos para que no se aplasten al parpadear) y nariz */
+      for (const s of [-1, 1]) {
+        const brow = mesh(
+          new THREE.BoxGeometry(0.058, 0.013, 0.014),
+          M(darken(L.hair || '#2a2a2a', 0.8)),
+          head,
+          0.072 * s,
+          0.066,
+          0.177,
+        );
+        brow.rotation.set(-0.35, 0.36 * s, 0.08 * s);
+        brow.castShadow = false;
+      }
+      const nose = mesh(new THREE.SphereGeometry(0.022, 14, 10), M(darken(L.skin, 0.92)), head, 0, -0.04, 0.193);
+      nose.scale.set(1, 0.9, 0.8);
+      nose.castShadow = false;
     }
     /* boca: arco de toro inclinado para seguir la curva de la cara */
     const mouthG = new THREE.Group();
-    mouthG.position.set(0, -0.06, 0.181);
+    mouthG.position.set(0, F.mouthY, F.mouthZ);
     head.add(mouthG);
     const mouth = mesh(new THREE.TorusGeometry(0.042, 0.009, 6, 18, Math.PI), M('#5a2a2a'), mouthG);
-    mouth.rotation.set(0.27, 0, Math.PI);
+    mouth.rotation.set(F.mouthTilt, 0, Math.PI);
     mouth.castShadow = false;
     if (L.helmet) {
       mesh(
@@ -1144,10 +1484,25 @@
         0.22,
         -0.02,
       );
+    } else if (L.afro) {
+      /* afro: esfera grande desplazada hacia atrás para dejar libre la frente,
+         con la superficie ondulada para que parezca rizado */
+      const geo = new THREE.IcosahedronGeometry(0.28, 3);
+      const pos = geo.attributes.position,
+        v = new THREE.Vector3();
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        v.multiplyScalar(1 + 0.045 * Math.sin(v.x * 70) * Math.sin(v.y * 64) * Math.sin(v.z * 58));
+        pos.setXYZ(i, v.x, v.y, v.z);
+      }
+      geo.computeVertexNormals();
+      mesh(geo, M(L.hair, { roughness: 1 }), head, 0, 0.14, -0.09);
     } else {
       mesh(new THREE.SphereGeometry(0.215, 32, 16, 0, Math.PI * 2, 0, 1.15), M(L.hair), head, 0, 0.004, -0.008);
       if (L.longHair)
         mesh(new THREE.SphereGeometry(0.218, 32, 16, Math.PI, Math.PI, 0, 2.05), M(L.hair), head, 0, 0, -0.01);
+      /* pelo corto: baja por la nuca para que no parezca un gorro */
+      else mesh(new THREE.SphereGeometry(0.213, 32, 16, Math.PI, Math.PI, 0, 1.8), M(L.hair), head, 0, 0.004, -0.008);
     }
     if (L.monocle) {
       mesh(
@@ -1161,9 +1516,12 @@
       mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.16, 6), M('#d9a521'), head, 0.135, -0.07, 0.17).rotation.z = 0.5;
     }
     if (L.headphones) {
-      mesh(new THREE.TorusGeometry(0.228, 0.018, 8, 32, Math.PI), M('#f2f2f2'), head);
+      /* con afro, la diadema se estira para pasar por encima del pelo */
+      const band = mesh(new THREE.TorusGeometry(0.228, 0.018, 8, 32, Math.PI), M('#f2f2f2'), head);
+      const cupX = L.afro ? 0.25 : 0.222;
+      if (L.afro) band.scale.set(cupX / 0.228, 1.9, 1.15);
       for (const s of [-1, 1])
-        mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.06, 20), M('#f2f2f2'), head, 0.222 * s, 0, 0).rotation.z =
+        mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.06, 20), M('#f2f2f2'), head, cupX * s, 0, 0).rotation.z =
           Math.PI / 2;
     }
     if (L.antenna) {
@@ -2367,6 +2725,7 @@ Cómo responder: en español, en personaje, de 1 a 3 frases cortas, tono cercano
       checkLiveIdle();
       updateSky();
     }
+    updateNavidad(now / 1000);
     if (focusTarget && controls) {
       const d = focusTarget
         .clone()
