@@ -1,0 +1,20 @@
+{
+  "name": "agent-office",
+  "version": "1.0.0",
+  "description": "Oficina 3D donde ves trabajar a tus subagentes de Claude Code",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js",
+    "test": "node --test test/*.test.js",
+    "format": "prettier --write .",
+    "lint": "prettier --check ."
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3"
+  }
+}

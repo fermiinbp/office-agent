@@ -1,0 +1,11 @@
+# Decisiones de arquitectura
+
+| Fecha      | Decisión                                                              | Motivo                                                                                                                                                                |
+| ---------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-06 | Three.js 0.147 en `client/vendor/` como scripts clásicos              | Es la última versión con build UMD y OrbitControls sin módulos, así `index.html` también funciona con doble clic (sin servidor ni bundler).                           |
+| 2026-11-06 | Servidor en Node puro, sin dependencias                               | Arranca con `npm start` sin instalar nada. La estructura sigue ruta → servicio.                                                                                       |
+| 2026-11-06 | Server-Sent Events para el modo en directo                            | Solo hace falta enviar del servidor al navegador; SSE no necesita librerías ni WebSocket.                                                                             |
+| 2026-11-06 | El hook es un script aparte que reenvía el JSON tal cual              | La lógica de traducir eventos vive en el servidor y se puede cambiar sin tocar la config de Claude Code. El hook sale en menos de 1 s aunque la oficina esté cerrada. |
+| 2026-11-06 | Héroes originales configurables en `config.js`                        | Los personajes de Marvel tienen copyright. Cada agente se mapea por el `name` de su `.md`; los desconocidos reciben un héroe generado.                                |
+| 2026-11-06 | Chat a través del servidor con `ANTHROPIC_API_KEY`                    | La clave no sale del equipo ni llega al navegador.                                                                                                                    |
+| 2026-11-06 | Tokens reales leídos del transcript `.jsonl` en `Stop`/`SubagentStop` | Los hooks no traen el uso de tokens; el transcript sí, en `message.usage`. Se cuenta una vez por `message.id`.                                                        |

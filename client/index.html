@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>The Agent Office</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 26 26%22%3E%3Crect x=%223%22 y=%229%22 width=%2220%22 height=%2214%22 rx=%222%22 fill=%22%232c3358%22/%3E%3Cpath d=%22M8 9 13 3l5 6%22 fill=%22none%22 stroke=%22%23ffb547%22 stroke-width=%222%22/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap"
+    />
+    <link rel="stylesheet" href="css/estilos.css" />
+  </head>
+  <body>
+    <div class="app">
+      <nav class="topbar" aria-label="Estado de la oficina">
+        <div class="brand">
+          <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+            <rect x="3" y="9" width="20" height="14" rx="2" fill="#2c3358" />
+            <rect x="6" y="12" width="4" height="4" rx="1" fill="#ffb547" />
+            <rect x="11" y="12" width="4" height="4" rx="1" fill="#5aa8ff" />
+            <rect x="16" y="12" width="4" height="4" rx="1" fill="#46c37b" />
+            <path d="M8 9 13 3l5 6" fill="none" stroke="#ffb547" stroke-width="2" stroke-linejoin="round" />
+          </svg>
+          The Agent Office
+        </div>
+        <span
+          class="live"
+          id="live"
+          title="En directo: la oficina muestra los eventos reales de Claude Code a través del hook."
+          >Simulación</span
+        >
+        <div class="stat">
+          <small>Hora de la oficina</small><b id="clock">--:--</b><span class="sub" id="day">Día 1</span>
+        </div>
+        <div class="stat">
+          <small>Tokens</small><b id="tokTotal">0</b><span class="sub" id="tokSplit">agentes 0 · chat 0</span>
+        </div>
+        <div class="stat hide-sm">
+          <small>PRs</small><b id="prs">0</b><span class="sub" id="issueMini">sin issue</span>
+        </div>
+        <div class="seg" role="group" aria-label="Velocidad del día">
+          <button type="button" data-speed="real" aria-pressed="false">Real</button>
+          <button type="button" data-speed="fast" aria-pressed="true">Rápido</button>
+          <button type="button" data-speed="turbo" aria-pressed="false">Turbo</button>
+        </div>
+        <label
+          class="btn filebtn"
+          id="loadBtn"
+          title="Elige tu carpeta .claude/agents (solo hace falta si abres la oficina sin el servidor)"
+          >Cargar agentes<input id="loadDir" type="file" webkitdirectory multiple
+        /></label>
+        <button class="btn" id="pause" type="button">Pausar</button>
+      </nav>
+
+      <main class="layout">
+        <section class="scene" id="scene" aria-label="Oficina 3D">
+          <div id="labels"></div>
+          <div class="hint">Arrastra para girar · rueda o pellizco para zoom · toca un héroe para hablar con él</div>
+        </section>
+        <aside>
+          <div class="tabs" role="tablist">
+            <button role="tab" aria-selected="true" data-tab="chat" type="button">Chat</button>
+            <button role="tab" aria-selected="false" data-tab="team" type="button">Equipo</button>
+            <button role="tab" aria-selected="false" data-tab="log" type="button">Actividad</button>
+          </div>
+          <div class="panel" data-panel="chat">
+            <div class="who" id="who"></div>
+            <div class="chathead">
+              <h3 id="chatName"></h3>
+              <p id="chatRole"></p>
+            </div>
+            <div class="msgs" id="msgs" aria-live="polite"></div>
+            <form class="compose" id="compose">
+              <textarea id="input" placeholder="Escribe a tu héroe…" aria-label="Mensaje"></textarea>
+              <button id="send" type="submit">Enviar</button>
+            </form>
+          </div>
+          <div class="panel" data-panel="team" hidden>
+            <div class="source" id="source"></div>
+            <div class="issue" id="issueBox"></div>
+            <ul class="list" id="team"></ul>
+          </div>
+          <div class="panel" data-panel="log" hidden>
+            <ul class="log" id="log"></ul>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script src="vendor/three.min.js"></script>
+    <script src="vendor/OrbitControls.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/oficina.js"></script>
+  </body>
+</html>
